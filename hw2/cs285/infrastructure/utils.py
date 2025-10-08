@@ -2,7 +2,7 @@ from collections import OrderedDict
 import numpy as np
 import copy
 from cs285.networks.policies import MLPPolicy
-import gym
+import gymnasium as gym
 import cv2
 from cs285.infrastructure import pytorch_util as ptu
 from typing import Dict, Tuple, List
@@ -24,24 +24,25 @@ def sample_trajectory(
             if hasattr(env, "sim"):
                 img = env.sim.render(camera_name="track", height=500, width=500)[::-1]
             else:
-                img = env.render(mode="single_rgb_array")
+                img = env.render()
             image_obs.append(
                 cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC)
             )
 
-        # TODO use the most recent ob and the policy to decide what to do
-        ac: np.ndarray = None
+        if type(ob) == tuple:
+            ob = ob[0]
 
-        # TODO: use that action to take a step in the environment
-        next_ob, rew, done, _ = None, None, None, None
+        np_action: np.ndarray = policy.get_action(ob)
+        action = np_action[0]
 
-        # TODO rollout can end due to done, or due to max_length
+        next_ob, rew, done, _, _ = env.step(action)
+
         steps += 1
-        rollout_done: bool = None
+        rollout_done: bool = done or steps > max_length
 
         # record result of taking that action
         obs.append(ob)
-        acs.append(ac)
+        acs.append(action)
         rewards.append(rew)
         next_obs.append(next_ob)
         terminals.append(rollout_done)
@@ -89,6 +90,7 @@ def sample_n_trajectories(
     trajs = []
     for _ in range(ntraj):
         # collect rollout
+        print(f"Max length is {max_length}")
         traj = sample_trajectory(env, policy, max_length, render)
         trajs.append(traj)
     return trajs
