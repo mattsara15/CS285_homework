@@ -174,8 +174,8 @@ class PGAgent(nn.Module):
         """
         discounted_reward_to_go = 0.0
         discounted_rewards_to_go = []
-        for i in range(len(rewards) - 1, -1, -1):
-            discounted_reward_to_go = discounted_reward_to_go * self.gamma + rewards[i]
+        for reward in reversed(rewards):
+            discounted_reward_to_go = discounted_reward_to_go * self.gamma + reward
             discounted_rewards_to_go.append(discounted_reward_to_go)
         discounted_rewards_to_go.reverse()
         return list(discounted_rewards_to_go)

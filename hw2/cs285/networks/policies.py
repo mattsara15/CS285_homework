@@ -75,12 +75,11 @@ class MLPPolicy(nn.Module):
         """
         if self.discrete:
             z = self.logits_net(obs)
-            distrib = torch.distributions.Categorical(logits=z)
-            return distrib
+            return torch.distributions.Categorical(logits=z)
         else:
-            # TODO: define the forward pass for a policy with a continuous action space.
-            pass
-        return output
+            mean_prob = self.mean_net(obs)
+            std_prob = torch.exp(self.logstd)
+            return distributions.MultivariateNormal(mean_prob, scale_tril=torch.diag(std_prob))
 
     def update(self, obs: np.ndarray, actions: np.ndarray, *args, **kwargs) -> float:
         """Performs one iteration of gradient descent on the provided batch of data."""
