@@ -9,7 +9,7 @@ import cs285.env_configs
 import os
 import time
 
-import gym
+import gymnasium as gym
 from gym import wrappers
 import numpy as np
 import torch
