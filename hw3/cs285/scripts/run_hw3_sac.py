@@ -10,7 +10,7 @@ import os
 import time
 
 import gymnasium as gym
-from gym import wrappers
+from gymnasium import wrappers
 import numpy as np
 import torch
 from cs285.infrastructure import pytorch_util as ptu
@@ -61,17 +61,16 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     replay_buffer = ReplayBuffer(config["replay_buffer_capacity"])
 
-    observation = env.reset()
+    observation = env.reset()[0]
 
     for step in tqdm.trange(config["total_steps"], dynamic_ncols=True):
         if step < config["random_steps"]:
             action = env.action_space.sample()
         else:
-            # TODO(student): Select an action
-            action = ...
+            action = agent.get_action(observation)
 
         # Step the environment and add the data to the replay buffer
-        next_observation, reward, done, info = env.step(action)
+        next_observation, reward, done, trunc, info = env.step(action)
         replay_buffer.insert(
             observation=observation,
             action=action,
@@ -83,15 +82,15 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         if done:
             logger.log_scalar(info["episode"]["r"], "train_return", step)
             logger.log_scalar(info["episode"]["l"], "train_ep_len", step)
-            observation = env.reset()
+            observation = env.reset()[0]
         else:
             observation = next_observation
 
         # Train the agent
         if step >= config["training_starts"]:
-            # TODO(student): Sample a batch of config["batch_size"] transitions from the replay buffer
-            batch = ...
-            update_info = ...
+            batch = replay_buffer.sample(batch_size)
+            batch = ptu.from_numpy(batch)
+            update_info = agent.update(**batch,step=step)
 
             # Logging
             update_info["actor_lr"] = agent.actor_lr_scheduler.get_last_lr()[0]
